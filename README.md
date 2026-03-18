@@ -13,14 +13,14 @@ Vi xử lý này sở hữu datapath gồm 8 thanh ghi, một Khối tính toán
 
 ## 📑 Mục lục
 1. [Kiến trúc Hệ thống](#-kiến-trúc-hệ-thống)
-2.[Chu trình lệnh & Khối điều khiển (FSM)](#-chu-trình-lệnh--khối-điều-khiển-fsm)
+2. [Chu trình lệnh và FSM](#-chu-trình-lệnh--khối-điều-khiển-fsm)
 3. [Datapath & ALU](#-datapath--alu)
-4.[Kiến trúc Tập lệnh (ISA)](#-kiến-trúc-tập-lệnh-isa)
+4. [Kiến trúc Tập lệnh (ISA)](#-kiến-trúc-tập-lệnh-isa)
 5. [Bản đồ Bộ nhớ & I/O](#-bản-đồ-bộ-nhớ--io)
 6. [Sơ đồ khối RTL](#-sơ-đồ-khối-rtl)
 7. [Mô phỏng & Giản đồ xung (Waveforms)](#-mô-phỏng--giản-đồ-xung-waveforms)
 8. [Cấu trúc phân cấp Module](#-cấu-trúc-phân-cấp-module)
-9.[Hướng dẫn Chạy / Tổng hợp (Synthesize)](#-hướng-dẫn-chạy--tổng-hợp-synthesize)
+9. [Hướng dẫn Chạy / Tổng hợp (Synthesize)](#-hướng-dẫn-chạy--tổng-hợp-synthesize)
 
 ---
 
