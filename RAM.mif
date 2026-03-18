@@ -1,0 +1,74 @@
+-- Memory Initialization File for 9-bit Processor
+-- Depth: 128 words
+-- Width: 9 bits
+
+DEPTH = 128;
+WIDTH = 9;
+ADDRESS_RADIX = HEX;
+DATA_RADIX = HEX;
+
+CONTENT
+BEGIN
+
+-- Address : Data;
+00 : 000; -- NOP / Start
+
+-- Initialize Registers
+01 : 040; -- movi r0, #0x001
+02 : 001; -- immediate for r0
+03 : 048; -- movi r1, #0x002
+04 : 002; -- immediate for r1
+05 : 050; -- movi r2, #0x003
+06 : 003; -- immediate for r2
+07 : 058; -- movi r3, #0x004
+08 : 004; -- immediate for r3
+09 : 060; -- movi r4, #0x005
+0A : 005; -- immediate for r4
+0B : 068; -- movi r5, #0x006
+0C : 006; -- immediate for r5
+0D : 070; -- movi r6, #0x007
+0E : 007; -- immediate for r6
+
+-- Simple Add Test
+0F : 0AC; -- add r4, r5 
+
+-- Store/Load Test (RAM)
+10 : 058; -- movi r3, #0
+11 : 000; -- immediate for r3
+12 : 01E; -- mv r3, r6
+13 : 048; -- movi r1, #64 (Decimal 100)
+14 : 064; -- imm for r1
+15 : 159; -- st r3, [r1] (Store to address 100)
+16 : 129; -- ld r5, [r1]
+
+-- Loop / Branch Logic
+17 : 050; -- movi r2, 0x03
+18 : 003; -- imm 0x03
+19 : 037; -- mv r6, r7
+1A : 0AD; -- add r5, r5
+1B : 0D0; -- sub r2, r0
+1C : 1BE; -- mvnz r7, r6
+
+-- Arithmetic Test
+1D : 060; -- movi r4, 0x4D
+1E : 04D; -- imm
+1F : 068; -- movi r5, 0x39
+20 : 039; -- imm
+21 : 0AC; -- add r5, r4 
+
+-- LED Output Sequence
+22 : 040; -- movi R0, 0x155
+23 : 155; -- imm
+24 : 048; -- movi R1, 0x00
+25 : 000; -- imm
+26 : 081; -- add R0, R1 
+
+27 : 060; -- movi R4, 0x100 (LED Address)
+28 : 100; -- imm: 
+
+29 : 144; -- st R0, [R4] (Stores R0 result to LEDs)
+
+-- Zero out the rest
+[2A..7F] : 000;
+
+END;
