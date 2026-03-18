@@ -1,2 +1,3 @@
 # systemverilog-9bit-custom-cpu
-Thiết kế lõi CPU 9bit multi-cycle tương tự kiến trúc Intel 4004, bao gồm khối điều khiển FSM, 8 thanh ghi với R7 đóng vai trò PC, RAM 128-word, ALU tích hợp cờ Zero và I/O ánh xạ bộ nhớ (memory-mapped) để điều khiển LED. Hỗ trợ tập lệnh 7 lệnh cơ bản.
+processor bao gồm bus dữ liệu và bus địa chỉ 9-bit, 8 thanh ghi đa dụng với R7 là Program Counter, với ALU hỗ trợ tính toán số nguyên đơn giản và rẽ nhánh có điều kiện.
+Instruction cycle theo chu trình nạp - giải mã - thực thi - lưu trữ đa xung nhịp, được quản lý thông qua máy trạng thái . Bên cạnh đó, hệ thống tích hợp bộ nhớ RAM 128 từ và khả năng giao tiếp với thiết bị ngoại vi bằng kỹ thuật memory-mapped I/O để xuất tín hiệu ra mảng LED.
