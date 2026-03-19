@@ -24,7 +24,7 @@ Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đ
 
 ## Cấu trúc hệ thống
 
-Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và các thiết bị bên ngoài.
+Module cao nhất `mcu_system` đóng vai trò kết nối lõi CPU (`processor`) với bộ nhớ (`RAM`) và ngoại vi (`ledreg9bit`). 
 
 
 
@@ -32,20 +32,18 @@ Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và 
 
 <img width="427" height="278" alt="Ảnh chụp màn hình 2026-03-18 162504" src="https://github.com/user-attachments/assets/848af935-ea16-4684-bd22-96cf900c6b48" />
 
+Module cao nhất `mcu_system` đóng vai trò kết nối lõi CPU (`processor`) với bộ nhớ (`RAM`) và ngoại vi (`ledreg9bit`). 
 
+* **Bus dữ liệu vào/ra (DIN/DOUT):** 9 bit.
+* **Bus địa chỉ (ADDR):** 9 bit. CPU xuất địa chỉ ra bus này để chọn nơi đọc/ghi.
+* **Tín hiệu điều khiển:** Dùng cờ `W_Main` (Write) để ra lệnh ghi dữ liệu. Khối giải mã địa chỉ sẽ tự động quyết định đẩy dữ liệu vào RAM hay vào đèn LED dựa trên giá trị của bus địa chỉ (xem phần Phân chia Bộ nhớ).
 
-
-### Thông số kỹ thuật
-* **Bus dữ liệu (Data Bus):** 9 bit.
-* **Bus địa chỉ (Address Bus):** 9 bit.
-* **Thanh ghi:** 8 thanh ghi chung (`R0` - `R7`). `R7` dùng làm thanh ghi đếm chương trình (PC).
-* **Bộ nhớ:** RAM 128 từ (word), tổ chức theo mô hình von Neumann.
 
 ---
 
 ## Chu trình lệnh và FSM
 
-Khối điều khiển dùng Máy trạng thái hữu hạn (FSM) để thực hiện các bước: Lấy lệnh (Fetch) - Giải mã (Decode) - Thực thi (Execute) - Lưu kết quả (Store/Memory/WriteBack). Mỗi lệnh cần chạy qua nhiều chu kỳ xung nhịp nhằm đảm bảo đủ thời gian để RAM đọc và ghi dữ liệu.
+Khối điều khiển (`control_unit`) dùng Máy trạng thái hữu hạn (FSM) gồm 7 trạng thái. Điểm đặc biệt của thiết kế này là các trạng thái Chờ (Wait) được chèn vào để xử lý độ trễ của RAM, đảm bảo CPU đọc đúng dữ liệu.
 
 
 <img width="355" height="245" alt="Ảnh chụp màn hình 2026-03-20 011422" src="https://github.com/user-attachments/assets/e312746a-e10e-46e0-964c-babe1cc68894" />
@@ -54,12 +52,15 @@ Khối điều khiển dùng Máy trạng thái hữu hạn (FSM) để thực h
 <img width="621" height="259" alt="cách_hoạt_động_tập_lệnh" src="https://github.com/user-attachments/assets/9b1c0fcb-61f2-462c-a664-2df43db648ac" />
 
 
-### Các trạng thái hoạt động:
-1. **Lấy lệnh (`T0`, `T0_Wait`):** Đưa địa chỉ từ PC (`R7`) ra Bus địa chỉ. Đọc dữ liệu từ RAM vào Thanh ghi lệnh (IR). Tăng PC thêm 1.
-2. **Giải mã (`T1`):** Dịch mã lệnh (Opcode) 3-bit. Mở đường cho dữ liệu từ thanh ghi đi vào bus bên trong và đặt mức logic cho Bus địa chỉ với các lệnh cần dùng bộ nhớ.
-3. **Thực thi (`T2`, `T2_Wait`):** ALU tính toán (với lệnh `add`, `sub`) hoặc hệ thống chờ lấy dữ liệu từ RAM (với lệnh `ld`, `movi`).
-4. **Lưu kết quả (`T3`):** Ghi kết quả tính toán vào thanh ghi nhận hoặc xuất dữ liệu ra RAM/cổng I/O (`st`).
-5. **Tiếp theo (`T4`):** Bật cờ `Done`, đưa địa chỉ lệnh tiếp theo ra bus và quay lại `T0`.
+
+Các trạng thái hoạt động thực tế trong mã nguồn:
+1. **`T0` (Đặt địa chỉ):** Đưa địa chỉ lệnh tiếp theo ra RAM. Chờ tín hiệu địa chỉ ổn định.
+2. **`T0_Wait` (Lấy lệnh):** RAM đã xuất dữ liệu. CPU lưu mã lệnh vào thanh ghi IR và tăng PC (`R7`) thêm 1.
+3. **`T1` (Giải mã):** Dịch mã lệnh 3-bit (`IR[8:6]`). Chuẩn bị các đường truyền dữ liệu (ví dụ: mở đường cho R0 xuất dữ liệu ra bus).
+4. **`T2` (Thực thi / Đặt địa chỉ bộ nhớ):** ALU thực hiện cộng/trừ. Nếu là lệnh đọc/ghi bộ nhớ (`ld`, `movi`), CPU xuất địa chỉ ra RAM.
+5. **`T2_Wait` (Chờ RAM):** Dùng riêng cho lệnh `ld` và `movi` để chờ RAM đẩy dữ liệu ra bus. Các lệnh khác bỏ qua bước này.
+6. **`T3` (Lưu kết quả):** Ghi kết quả từ ALU vào thanh ghi, hoặc chốt tín hiệu `W` để ghi dữ liệu vào RAM (`st`).
+7. **`T4` (Tiếp theo):** Bật cờ `Done` báo hiệu xong lệnh, đẩy địa chỉ lệnh mới ra bus và quay về `T0`.
 
 ---
 
@@ -74,8 +75,14 @@ Thiết kế đường dữ liệu dùng một bộ chọn kênh (multiplexer) l
 
 <img width="430" height="359" alt="Ảnh chụp màn hình 2026-03-18 162448" src="https://github.com/user-attachments/assets/26e25c3a-ef7b-4f8b-b538-a5c51867e1cc" />
 
-* **ALU:** Tạo ra từ các bộ cộng toàn phần (full-adder), làm phép cộng và phép trừ bù 2.
-* **Cờ Zero:** Dùng cổng NOR để kiểm tra xem kết quả đầu ra của ALU có bằng 0 hay không, sau đó lưu vào flip-flop `ALUz`. Cờ này dùng cho lệnh nhảy `mvnz`.
+Đường dữ liệu quản lý cách các bit di chuyển giữa các thanh ghi và ALU bên trong lõi CPU.
+
+* **Bộ chọn đường dẫn (Bus Multiplexer):** Sử dụng các lệnh `if-else` mức logic tổ hợp để chọn đúng 1 nguồn dữ liệu duy nhất (từ R0-R7, kết quả ALU, hoặc dữ liệu từ RAM) đẩy ra bus chung (`BusWires`).
+* **Tính toán PC (`pc_logic`):** Thanh ghi R7 có một mạch tính riêng. Mạch này quyết định: một là cộng PC thêm 1 (khi đọc xong 1 lệnh), hai là nhận thẳng giá trị mới từ Bus (khi thực hiện lệnh nhảy).
+* **Khối ALU (`alu`):** 
+  * Được ghép nối tiếp từ 9 bộ cộng toàn phần (Full Adder). 
+  * Phép trừ được thực hiện bằng phương pháp **bù 2**: Lấy đảo bit của toán hạng B (dùng cổng XOR với tín hiệu `AddSub`) và cộng thêm 1 (đưa tín hiệu `AddSub` vào `Cin`).
+  * **Cờ Zero:** Dùng cổng NOR thu thập toàn bộ 9 bit kết quả đầu ra. Nếu tất cả đều bằng 0, cờ Zero bật lên 1 và được lưu vào flip-flop `ALUz` để dùng cho lệnh nhảy.
 
 ---
 
@@ -100,15 +107,13 @@ Cấu trúc lệnh 9-bit nằm trong Thanh ghi lệnh (`IR[8:0]`):
 
 ## Phân chia Bộ nhớ và I/O
 
-Top module dùng phương pháp ánh xạ I/O vào bộ nhớ (Memory-Mapped I/O). Phần cứng chia không gian bộ nhớ thành các vùng như sau:
+Hệ thống dùng phương pháp ánh xạ ngoại vi vào bộ nhớ. Khối `mcu_system` đọc bit thứ 7 và thứ 8 của Bus địa chỉ (`ADDR_Bus[8:7]`) để chuyển hướng dữ liệu thay vì cần thêm chân điều khiển riêng:
 
-<img width="682" height="214" alt="Ảnh chụp màn hình 2026-03-20 012113" src="https://github.com/user-attachments/assets/09a2a3ee-35e8-4330-8af9-e8b3d4de284e" />
+| Bit 8 | Bit 7 | Địa chỉ (Nhị phân) | Thiết bị nhận | Giải thích logic điều khiển |
+| :---: | :---: | :--- | :--- | :--- |
+| `0` | `0` | `00xxxxxxx` (0 - 127) | **RAM 128-word** | Cờ `Mem_Wr_En` bật khi `W_Main=1`, bit 8=0, bit 7=0. RAM nhận dữ liệu lệnh và biến. |
+| `1` | `0` | `100000000` (256) | **Đèn LED** | Cờ `LED_En` bật khi `W_Main=1`, bit 8=1, bit 7=0. Mạch chặn lệnh ghi vào RAM và đẩy thẳng ra module đèn LED. |
 
-
-| Vùng địa chỉ (Nhị phân) | Địa chỉ (Thập phân) | Thiết bị | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `00xxxxxxx` | `0` - `127` | **RAM** | Bộ nhớ chính (chứa cả Lệnh và Dữ liệu). |
-| `100000000` | `256` | **LED** | Thanh ghi ngoại vi 9-bit. |
 
 Để đưa dữ liệu ra đèn LED, dùng lệnh `st` (ghi) với địa chỉ nhận là `256`. Mạch logic sẽ tự chuyển tín hiệu ghi đến module `ledreg9bit` thay vì đẩy vào RAM.
 
