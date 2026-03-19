@@ -5,7 +5,7 @@
 ![Design Pattern](https://img.shields.io/badge/Design-Multi--Cycle-orange.svg)
 
 ## Giới thiệu chung
-Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đa chu kỳ bằng ngôn ngữ SystemVerilog. Thiết kế dựa trên tập lệnh gần giống với Intel 4004, hệ thống bao gồm khối điều khiển FSM, 8 thanh ghi với thanh ghi R7 dùng để đếm chương trình - Program Counter), RAM 128 từ (word), khối ALU có cờ Zero và cổng I/O ánh xạ bộ nhớ memory-mapped để điều khiển đèn LED. CPU hỗ trợ 7 lệnh cơ bản.
+Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đa chu kỳ bằng ngôn ngữ SystemVerilog. Thiết kế dựa trên tập lệnh giống với Intel 4004, hệ thống bao gồm khối điều khiển FSM, 8 thanh ghi với thanh ghi R7 dùng để đếm chương trình - Program Counter), RAM 128 từ (word), khối ALU có cờ Zero và cổng I/O ánh xạ bộ nhớ memory-mapped để điều khiển đèn LED. CPU hỗ trợ 7 lệnh cơ bản.
 
 ---
 
@@ -18,7 +18,7 @@ Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đ
 6. [Sơ đồ RTL](#sơ-đồ-rtl)
 7. [Mô phỏng và Biểu đồ xung](#mô-phỏng-và-biểu-đồ-xung)
 8. [Cấu trúc Module](#cấu-trúc-module)
-9. [Hướng dẫn Chạy thử nghiệm](#hướng-dẫn-chạy-thử-nghiệm)
+9. [Thông tin thêm và lời cám ơn](#thông-tin-thêm)
 
 ---
 
@@ -229,4 +229,11 @@ END;
   * `ledreg9bit` (Thanh ghi I/O)
 
 ---
+## Thông tin thêm 
+Dự án này là một bài tập thực hành thuộc chương trình học trên lớp, được thực hiện nhằm mục đích áp dụng các kiến thức lý thuyết về vi xử lý và thiết kế mạch số vào thực tế. 
 
+Trong quá trình làm bài, mình rất biết ơn vì đã nhận được sự hướng dẫn trực tiếp từ các giảng viên để hiểu rõ hơn về luồng hoạt động của hệ thống. Đồng thời, mình cũng xin cảm ơn các bạn cùng lớp là những người đã dành thời gian thảo luận và hỗ trợ mình debug ở những đoạn code phức tạp. Những góp ý từ bên ngoài này đã giúp mình hoàn thiện thiết kế tốt hơn rất nhiều.
+
+Bên cạnh đó, dự án có sử dụng các công cụ AI ở một chừng mực nhất định. AI chỉ đóng vai trò hỗ trợ phụ, chủ yếu dùng để trình bày file tài liệu README này, căn chỉnh định dạng và giải thích một vài lỗi cú pháp cơ bản. 
+
+Cuối cùng, mình cũng muốn xin cám ơn những ai đã đọc hết dự án vì đã dành thời gian ra tìm hiểu và được mình chia sẻ đề tài này.
