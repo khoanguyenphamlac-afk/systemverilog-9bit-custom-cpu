@@ -5,7 +5,7 @@
 ![Design Pattern](https://img.shields.io/badge/Design-Multi--Cycle-orange.svg)
 
 ## Giới thiệu chung
-Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đa chu kỳ (multi-cycle) bằng ngôn ngữ SystemVerilog. Thiết kế dựa trên tập lệnh gần giống với Intel 4004. Hệ thống bao gồm khối điều khiển FSM, 8 thanh ghi (R7 dùng làm thanh ghi đếm chương trình - Program Counter), RAM 128 từ (word), khối ALU có cờ Zero và cổng I/O ánh xạ bộ nhớ (memory-mapped) để điều khiển đèn LED. CPU hỗ trợ 7 lệnh cơ bản.
+Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đa chu kỳ bằng ngôn ngữ SystemVerilog. Thiết kế dựa trên tập lệnh gần giống với Intel 4004, hệ thống bao gồm khối điều khiển FSM, 8 thanh ghi với thanh ghi R7 dùng để đếm chương trình - Program Counter), RAM 128 từ (word), khối ALU có cờ Zero và cổng I/O ánh xạ bộ nhớ memory-mapped để điều khiển đèn LED. CPU hỗ trợ 7 lệnh cơ bản.
 
 ---
 
@@ -24,7 +24,7 @@ Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đ
 
 ## Cấu trúc hệ thống
 
-Module cao nhất `mcu_system` đóng vai trò kết nối lõi CPU (`processor`) với bộ nhớ (`RAM`) và ngoại vi (`ledreg9bit`). 
+Module cao nhất `mcu_system` đóng vai trò kết nối CPU  với RAM và ngoại vi (`ledreg9bit`). 
 
 
 
@@ -32,18 +32,17 @@ Module cao nhất `mcu_system` đóng vai trò kết nối lõi CPU (`processor`
 
 <img width="427" height="278" alt="Ảnh chụp màn hình 2026-03-18 162504" src="https://github.com/user-attachments/assets/848af935-ea16-4684-bd22-96cf900c6b48" />
 
-Module cao nhất `mcu_system` đóng vai trò kết nối lõi CPU (`processor`) với bộ nhớ (`RAM`) và ngoại vi (`ledreg9bit`). 
 
 * **Bus dữ liệu vào/ra (DIN/DOUT):** 9 bit.
 * **Bus địa chỉ (ADDR):** 9 bit. CPU xuất địa chỉ ra bus này để chọn nơi đọc/ghi.
-* **Tín hiệu điều khiển:** Dùng cờ `W_Main` (Write) để ra lệnh ghi dữ liệu. Khối giải mã địa chỉ sẽ tự động quyết định đẩy dữ liệu vào RAM hay vào đèn LED dựa trên giá trị của bus địa chỉ (xem phần Phân chia Bộ nhớ).
+* **Tín hiệu điều khiển:** Dùng cờ `W_Main` (viết) để ra lệnh ghi dữ liệu. Khối giải mã địa chỉ sẽ tự động quyết định đẩy dữ liệu vào RAM hay vào đèn LED dựa trên giá trị của bus địa chỉ (xem phần Phân chia Bộ nhớ).
 
 
 ---
 
 ## Chu trình lệnh và FSM
 
-Khối điều khiển (`control_unit`) dùng Máy trạng thái hữu hạn (FSM) gồm 7 trạng thái. Điểm đặc biệt của thiết kế này là các trạng thái Chờ (Wait) được chèn vào để xử lý độ trễ của RAM, đảm bảo CPU đọc đúng dữ liệu.
+Khối điều khiển (`control_unit`) dùng Finite State Machine gồm 7 trạng thái. Điểm đặc biệt của thiết kế này là các trạng thái chờ được chèn vào để xử lý độ trễ của RAM, đảm bảo CPU đọc đúng dữ liệu.
 
 
 <img width="355" height="245" alt="Ảnh chụp màn hình 2026-03-20 011422" src="https://github.com/user-attachments/assets/e312746a-e10e-46e0-964c-babe1cc68894" />
@@ -56,7 +55,7 @@ Khối điều khiển (`control_unit`) dùng Máy trạng thái hữu hạn (FS
 Các trạng thái hoạt động thực tế trong mã nguồn:
 1. **`T0` (Đặt địa chỉ):** Đưa địa chỉ lệnh tiếp theo ra RAM. Chờ tín hiệu địa chỉ ổn định.
 2. **`T0_Wait` (Lấy lệnh):** RAM đã xuất dữ liệu. CPU lưu mã lệnh vào thanh ghi IR và tăng PC (`R7`) thêm 1.
-3. **`T1` (Giải mã):** Dịch mã lệnh 3-bit (`IR[8:6]`). Chuẩn bị các đường truyền dữ liệu (ví dụ: mở đường cho R0 xuất dữ liệu ra bus).
+3. **`T1` (Giải mã):** Dịch mã lệnh 3-bit (`IR[8:6]`). Chuẩn bị các đường truyền dữ liệu, ví dụ như mở đường cho R0 xuất dữ liệu ra bus.
 4. **`T2` (Thực thi / Đặt địa chỉ bộ nhớ):** ALU thực hiện cộng/trừ. Nếu là lệnh đọc/ghi bộ nhớ (`ld`, `movi`), CPU xuất địa chỉ ra RAM.
 5. **`T2_Wait` (Chờ RAM):** Dùng riêng cho lệnh `ld` và `movi` để chờ RAM đẩy dữ liệu ra bus. Các lệnh khác bỏ qua bước này.
 6. **`T3` (Lưu kết quả):** Ghi kết quả từ ALU vào thanh ghi, hoặc chốt tín hiệu `W` để ghi dữ liệu vào RAM (`st`).
@@ -66,7 +65,7 @@ Các trạng thái hoạt động thực tế trong mã nguồn:
 
 ## Đường dữ liệu (Datapath) và ALU
 
-Thiết kế đường dữ liệu dùng một bộ chọn kênh (multiplexer) làm trung tâm để dẫn hướng dữ liệu giữa các khối.
+Thiết kế đường dữ liệu dùng một bộ chọn kênh làm trung tâm để dẫn hướng dữ liệu giữa các khối.
 
 <img width="743" height="386" alt="Ảnh chụp màn hình 2026-03-20 011808" src="https://github.com/user-attachments/assets/b957f601-beea-48fe-8c8d-c1d2013c3ba9" />
 
@@ -129,7 +128,84 @@ Hệ thống dùng phương pháp ánh xạ ngoại vi vào bộ nhớ. Khối `
 
 ## Mô phỏng và Biểu đồ xung
 
-Hoạt động của vi xử lý được kiểm tra bằng testbench ở mức RTL.
+Hoạt động của vi xử lý được kiểm tra bằng dữ liệu lưu trong bộ nhớ RAM 128 byte, test các chức năng của các tập lệnh
+
+
+-- Memory Initialization File for 9-bit Processor
+-- Depth: 128 words
+-- Width: 9 bits
+
+DEPTH = 128;
+WIDTH = 9;
+ADDRESS_RADIX = HEX;
+DATA_RADIX = HEX;
+
+CONTENT
+BEGIN
+
+
+00 : 000; -- NOP / Start
+
+--Khởi động thanh ghi 
+01 : 040; -- movi r0, #0x001
+02 : 001; -- immediate for r0
+03 : 048; -- movi r1, #0x002
+04 : 002; -- immediate for r1
+05 : 050; -- movi r2, #0x003
+06 : 003; -- immediate for r2
+07 : 058; -- movi r3, #0x004
+08 : 004; -- immediate for r3
+09 : 060; -- movi r4, #0x005
+0A : 005; -- immediate for r4
+0B : 068; -- movi r5, #0x006
+0C : 006; -- immediate for r5
+0D : 070; -- movi r6, #0x007
+0E : 007; -- immediate for r6
+
+-- Test bộ cộng 
+0F : 0AC; -- add r4, r5 
+
+-- Test load và store
+10 : 058; -- movi r3, #0
+11 : 000; -- immediate for r3
+12 : 01E; -- mv r3, r6
+13 : 048; -- movi r1, #64 (Decimal 100)
+14 : 064; -- imm for r1
+15 : 159; -- st r3, [r1] (Store to address 100)
+16 : 129; -- ld r5, [r1]
+
+-- Vòng lặp, rẽ nhánh
+17 : 050; -- movi r2, 0x03
+18 : 003; -- imm 0x03
+19 : 037; -- mv r6, r7
+1A : 0AD; -- add r5, r5
+1B : 0D0; -- sub r2, r0
+1C : 1BE; -- mvnz r7, r6
+
+-- Test cộng lần 2 (số cao hơn)
+1D : 060; -- movi r4, 0x4D
+1E : 04D; -- imm
+1F : 068; -- movi r5, 0x39
+20 : 039; -- imm
+21 : 0AC; -- add r5, r4 
+
+-- Test hiển thị led
+22 : 040; -- movi R0, 0x155
+23 : 155; -- imm
+24 : 048; -- movi R1, 0x00
+25 : 000; -- imm
+26 : 081; -- add R0, R1 
+
+27 : 060; -- movi R4, 0x100 (LED Address)
+28 : 100; -- imm: 
+
+29 : 144; -- st R0, [R4] (Stores R0 result to LEDs)
+
+
+--các địa chỉ còn lại trên RAM = 0
+[2A..7F] : 000;
+
+END;
 
 
 Các tín hiệu chính cần xem trên biểu đồ:
