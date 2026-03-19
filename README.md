@@ -130,7 +130,7 @@ Hệ thống dùng phương pháp ánh xạ ngoại vi vào bộ nhớ. Khối `
 
 Hoạt động của vi xử lý được kiểm tra bằng dữ liệu lưu trong bộ nhớ RAM 128 byte, test các chức năng của các tập lệnh
 
-
+```
 -- Memory Initialization File for 9-bit Processor
 -- Depth: 128 words
 -- Width: 9 bits
@@ -206,7 +206,7 @@ BEGIN
 [2A..7F] : 000;
 
 END;
-
+```
 
 Các tín hiệu chính cần xem trên biểu đồ:
 * Bước chuyển trạng thái `Tstep_Q` từ `T0` đến `T4`.
