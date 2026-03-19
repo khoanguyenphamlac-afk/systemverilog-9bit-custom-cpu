@@ -208,10 +208,11 @@ BEGIN
 END;
 ```
 
-Các tín hiệu chính cần xem trên biểu đồ:
-* Bước chuyển trạng thái `Tstep_Q` từ `T0` đến `T4`.
-* Trạng thái tín hiệu `Done` ở cuối chu trình lệnh (`T4`).
-* Sự thay đổi giá trị của `BusWires` và thanh ghi PC.
+<img width="542" height="419" alt="Ảnh chụp màn hình 2026-03-20 014040" src="https://github.com/user-attachments/assets/5bfebd70-1a94-49c8-bcb3-cf0429ff4ad8" />
+
+<img width="535" height="423" alt="Ảnh chụp màn hình 2026-03-20 014117" src="https://github.com/user-attachments/assets/29959f1e-d2a5-41a0-8588-fc9b8c3661e2" />
+
+<img width="903" height="192" alt="Ảnh chụp màn hình 2026-03-20 014134" src="https://github.com/user-attachments/assets/6ff5d0de-9130-42d1-9be1-b132708acede" />
 
 ---
 
