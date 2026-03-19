@@ -109,6 +109,12 @@ Cấu trúc lệnh 9-bit nằm trong Thanh ghi lệnh (`IR[8:0]`):
 
 Hệ thống dùng phương pháp ánh xạ ngoại vi vào bộ nhớ. Khối `mcu_system` đọc bit thứ 7 và thứ 8 của Bus địa chỉ (`ADDR_Bus[8:7]`) để chuyển hướng dữ liệu thay vì cần thêm chân điều khiển riêng:
 
+
+
+<img width="682" height="214" alt="Ảnh chụp màn hình 2026-03-20 012113" src="https://github.com/user-attachments/assets/d18e9a8a-2a7d-49cd-9540-9d8de1c77266" />
+
+
+
 | Bit 8 | Bit 7 | Địa chỉ (Nhị phân) | Thiết bị nhận | Giải thích logic điều khiển |
 | :---: | :---: | :--- | :--- | :--- |
 | `0` | `0` | `00xxxxxxx` (0 - 127) | **RAM 128-word** | Cờ `Mem_Wr_En` bật khi `W_Main=1`, bit 8=0, bit 7=0. RAM nhận dữ liệu lệnh và biến. |
