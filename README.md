@@ -1,17 +1,17 @@
-# 💻 Vi xử lý 9-bit Đa chu kỳ Tùy chỉnh (Thiết kế RTL)
+#  Vi xử lý 9-bit Đa chu kỳ Tùy chỉnh (Thiết kế RTL)
 
 ![SystemVerilog](https://img.shields.io/badge/Language-SystemVerilog-blue.svg)
 ![Architecture](https://img.shields.io/badge/Architecture-9--bit-success.svg)
 ![Design Pattern](https://img.shields.io/badge/Design-Multi--Cycle-orange.svg)
 
-## 📌 Tổng quan dự án
-Repository này chứa toàn bộ mã nguồn RTL (Register-Transfer Level) của một **Vi xử lý 9-bit đa chu kỳ (multi-cycle)** được thiết kế bằng **SystemVerilog**. Được xây dựng hoàn toàn từ đầu, dự án này minh họa các khái niệm cốt lõi của kiến trúc máy tính, bao gồm điều khiển bằng Máy trạng thái (FSM), Kiến trúc tập lệnh tùy chỉnh (ISA), Tổ chức bộ nhớ von Neumann, và Kỹ thuật Ánh xạ bộ nhớ (Memory-Mapped I/O).
+## Tổng quan dự án
+Repository này chứa toàn bộ mã nguồn RTL (Register-Transfer Level) của một **Vi xử lý 9-bit đa chu kỳ (multi-cycle)** được thiết kế bằng **SystemVerilog**, dự án này minh họa các khái niệm cốt lõi của kiến trúc máy tính, bao gồm điều khiển bằng máy trạng thái (FSM), kiến trúc tập lệnh tùy chỉnh (ISA), Tổ chức bộ nhớ von Neumann, và Kỹ thuật Ánh xạ bộ nhớ (Memory-Mapped I/O).
 
-Vi xử lý này sở hữu datapath gồm 8 thanh ghi, một Khối tính toán số học logic (ALU) chuyên dụng, một chu trình thực thi đa xung nhịp, và các thiết bị ngoại vi phần cứng (mảng LED 9-bit) được điều khiển thông qua các địa chỉ bộ nhớ cụ thể.
+Vi xử lý này có datapath gồm 8 thanh ghi, một khối ALU , một chu trình thực thi đa xung nhịp, và mảng LED 9-bit ngoại vi được điều khiển thông qua các địa chỉ bộ nhớ cụ thể.
 
 ---
 
-## 📑 Mục lục
+## Mục lục
 1. [Kiến trúc Hệ thống](#-kiến-trúc-hệ-thống)
 2. [Chu trình lệnh và FSM](#-chu-trình-lệnh--khối-điều-khiển-fsm)
 3. [Datapath & ALU](#-datapath--alu)
@@ -24,11 +24,11 @@ Vi xử lý này sở hữu datapath gồm 8 thanh ghi, một Khối tính toán
 
 ---
 
-## 🏛️ Kiến trúc Hệ thống
+## Kiến trúc Hệ thống
 
-Hệ thống ở mức cao nhất (`mcu_system`) đóng vai trò như một bo mạch chủ (motherboard), kết nối Lõi CPU, Bộ nhớ chính (RAM) và các Thiết bị ngoại vi (LED).
+Top module mcu_system kết nối CPU, RAM và các thiết bị ngoại vi LED.
 
-![Top Level System Architecture](docs/images/top_level_architecture.png)
+![Top Level System Architecture](docs/images/top_module.png)
 > *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Sơ đồ khối minh họa mcu_system, Lõi CPU, RAM và đầu ra LED tương tác với nhau qua bus dữ liệu và bus địa chỉ 9-bit. -->*
 
 ### Thông số Kỹ thuật Chính:
