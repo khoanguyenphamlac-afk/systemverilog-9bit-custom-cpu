@@ -13,7 +13,7 @@ Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đ
 1. [Cấu trúc hệ thống](#cấu-trúc-hệ-thống)
 2. [Chu trình lệnh và FSM](#chu-trình-lệnh-và-fsm)
 3. [Đường dữ liệu (Datapath) và ALU](#đường-dữ-liệu-datapath-và-alu)
-4.[Tập lệnh (ISA)](#tập-lệnh-isa)
+4. [Tập lệnh (ISA)](#tập-lệnh-isa)
 5. [Phân chia Bộ nhớ và I/O](#phân-chia-bộ-nhớ-và-io)
 6. [Sơ đồ RTL](#sơ-đồ-rtl)
 7. [Mô phỏng và Biểu đồ xung](#mô-phỏng-và-biểu-đồ-xung)
@@ -29,8 +29,6 @@ Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và 
 
 
 <img width="800" height="239" alt="top_module" src="https://github.com/user-attachments/assets/b1787f6d-a3c9-4aa7-9143-72b5c62e9c33" />
-
-
 
 <img width="427" height="278" alt="Ảnh chụp màn hình 2026-03-18 162504" src="https://github.com/user-attachments/assets/848af935-ea16-4684-bd22-96cf900c6b48" />
 
@@ -122,8 +120,6 @@ Top module dùng phương pháp ánh xạ I/O vào bộ nhớ (Memory-Mapped I/O
 
 Hoạt động của vi xử lý được kiểm tra bằng testbench ở mức RTL.
 
-![Biểu đồ xung](docs/images/simulation_waveform.png)
-*(Thêm đường dẫn ảnh biểu đồ xung tại đây)*
 
 Các tín hiệu chính cần xem trên biểu đồ:
 * Bước chuyển trạng thái `Tstep_Q` từ `T0` đến `T4`.
