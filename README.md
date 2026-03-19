@@ -30,6 +30,13 @@ Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và 
 
 <img width="800" height="239" alt="top_module" src="https://github.com/user-attachments/assets/b1787f6d-a3c9-4aa7-9143-72b5c62e9c33" />
 
+
+
+<img width="427" height="278" alt="Ảnh chụp màn hình 2026-03-18 162504" src="https://github.com/user-attachments/assets/848af935-ea16-4684-bd22-96cf900c6b48" />
+
+
+
+
 ### Thông số kỹ thuật
 * **Bus dữ liệu (Data Bus):** 9 bit.
 * **Bus địa chỉ (Address Bus):** 9 bit.
@@ -40,10 +47,14 @@ Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và 
 
 ## Chu trình lệnh và FSM
 
-Khối điều khiển dùng Máy trạng thái hữu hạn (FSM) để thực hiện các bước: Lấy lệnh (Fetch) - Giải mã (Decode) - Thực thi (Execute) - Lưu kết quả (Store). Mỗi lệnh cần chạy qua nhiều chu kỳ xung nhịp nhằm đảm bảo đủ thời gian để RAM đọc và ghi dữ liệu.
+Khối điều khiển dùng Máy trạng thái hữu hạn (FSM) để thực hiện các bước: Lấy lệnh (Fetch) - Giải mã (Decode) - Thực thi (Execute) - Lưu kết quả (Store/Memory/WriteBack). Mỗi lệnh cần chạy qua nhiều chu kỳ xung nhịp nhằm đảm bảo đủ thời gian để RAM đọc và ghi dữ liệu.
 
-![Sơ đồ trạng thái FSM](docs/images/fsm_state_diagram.png)
-*(Thêm đường dẫn ảnh sơ đồ trạng thái FSM tại đây)*
+
+<img width="355" height="245" alt="Ảnh chụp màn hình 2026-03-20 011422" src="https://github.com/user-attachments/assets/e312746a-e10e-46e0-964c-babe1cc68894" />
+
+
+<img width="621" height="259" alt="cách_hoạt_động_tập_lệnh" src="https://github.com/user-attachments/assets/9b1c0fcb-61f2-462c-a664-2df43db648ac" />
+
 
 ### Các trạng thái hoạt động:
 1. **Lấy lệnh (`T0`, `T0_Wait`):** Đưa địa chỉ từ PC (`R7`) ra Bus địa chỉ. Đọc dữ liệu từ RAM vào Thanh ghi lệnh (IR). Tăng PC thêm 1.
@@ -58,8 +69,12 @@ Khối điều khiển dùng Máy trạng thái hữu hạn (FSM) để thực h
 
 Thiết kế đường dữ liệu dùng một bộ chọn kênh (multiplexer) làm trung tâm để dẫn hướng dữ liệu giữa các khối.
 
-![Sơ đồ Datapath](docs/images/cpu_datapath.png)
-*(Thêm đường dẫn ảnh sơ đồ datapath tại đây)*
+<img width="743" height="386" alt="Ảnh chụp màn hình 2026-03-20 011808" src="https://github.com/user-attachments/assets/b957f601-beea-48fe-8c8d-c1d2013c3ba9" />
+
+<img width="511" height="401" alt="Ảnh chụp màn hình 2026-03-20 011845" src="https://github.com/user-attachments/assets/d678f6cb-9ad0-43b8-ba00-a29995e25f34" />
+
+
+<img width="430" height="359" alt="Ảnh chụp màn hình 2026-03-18 162448" src="https://github.com/user-attachments/assets/26e25c3a-ef7b-4f8b-b538-a5c51867e1cc" />
 
 * **ALU:** Tạo ra từ các bộ cộng toàn phần (full-adder), làm phép cộng và phép trừ bù 2.
 * **Cờ Zero:** Dùng cổng NOR để kiểm tra xem kết quả đầu ra của ALU có bằng 0 hay không, sau đó lưu vào flip-flop `ALUz`. Cờ này dùng cho lệnh nhảy `mvnz`.
@@ -89,6 +104,9 @@ Cấu trúc lệnh 9-bit nằm trong Thanh ghi lệnh (`IR[8:0]`):
 
 Top module dùng phương pháp ánh xạ I/O vào bộ nhớ (Memory-Mapped I/O). Phần cứng chia không gian bộ nhớ thành các vùng như sau:
 
+<img width="682" height="214" alt="Ảnh chụp màn hình 2026-03-20 012113" src="https://github.com/user-attachments/assets/09a2a3ee-35e8-4330-8af9-e8b3d4de284e" />
+
+
 | Vùng địa chỉ (Nhị phân) | Địa chỉ (Thập phân) | Thiết bị | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `00xxxxxxx` | `0` - `127` | **RAM** | Bộ nhớ chính (chứa cả Lệnh và Dữ liệu). |
@@ -98,17 +116,7 @@ Top module dùng phương pháp ánh xạ I/O vào bộ nhớ (Memory-Mapped I/O
 
 ---
 
-## Sơ đồ RTL
 
-Các sơ đồ này dùng để kiểm tra lại kết quả sau khi phần mềm dịch (synthesis) mã nguồn SystemVerilog ra logic phần cứng.
-
-![Sơ đồ RTL mức Top](docs/images/rtl_viewer_top.png)
-*(Thêm đường dẫn ảnh RTL schematic mức top tại đây)*
-
-![Sơ đồ RTL khối FSM](docs/images/rtl_viewer_fsm.png)
-*(Thêm đường dẫn ảnh RTL khối FSM tại đây)*
-
----
 
 ## Mô phỏng và Biểu đồ xung
 
@@ -138,8 +146,3 @@ Các tín hiệu chính cần xem trên biểu đồ:
 
 ---
 
-## Hướng dẫn Chạy thử nghiệm
-
-1. Tải mã nguồn:
-   ```bash
-   git clone https://github.com/Tên-Của-Bạn/systemverilog-9bit-cpu.git
