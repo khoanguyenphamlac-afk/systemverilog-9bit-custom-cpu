@@ -1,147 +1,144 @@
-#  Vi xử lý 9-bit Đa chu kỳ Tùy chỉnh (Thiết kế RTL)
+# Thiết kế RTL: Bộ vi xử lý 9-bit đa chu kỳ
 
 ![SystemVerilog](https://img.shields.io/badge/Language-SystemVerilog-blue.svg)
 ![Architecture](https://img.shields.io/badge/Architecture-9--bit-success.svg)
 ![Design Pattern](https://img.shields.io/badge/Design-Multi--Cycle-orange.svg)
 
-## Tổng quan dự án
-Repository này chứa toàn bộ mã nguồn RTL (Register-Transfer Level) của một **Vi xử lý 9-bit đa chu kỳ (multi-cycle)** được thiết kế bằng **SystemVerilog**, dự án này minh họa các khái niệm cốt lõi của kiến trúc máy tính, bao gồm điều khiển bằng máy trạng thái (FSM), kiến trúc tập lệnh tùy chỉnh (ISA), Tổ chức bộ nhớ von Neumann, và Kỹ thuật Ánh xạ bộ nhớ (Memory-Mapped I/O).
-
-Vi xử lý này có datapath gồm 8 thanh ghi, một khối ALU , một chu trình thực thi đa xung nhịp, và mảng LED 9-bit ngoại vi được điều khiển thông qua các địa chỉ bộ nhớ cụ thể.
+## Giới thiệu chung
+Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đa chu kỳ (multi-cycle) bằng ngôn ngữ SystemVerilog. Thiết kế dựa trên tập lệnh gần giống với Intel 4004. Hệ thống bao gồm khối điều khiển FSM, 8 thanh ghi (R7 dùng làm thanh ghi đếm chương trình - Program Counter), RAM 128 từ (word), khối ALU có cờ Zero và cổng I/O ánh xạ bộ nhớ (memory-mapped) để điều khiển đèn LED. CPU hỗ trợ 7 lệnh cơ bản.
 
 ---
 
 ## Mục lục
-1. [Kiến trúc Hệ thống](#-kiến-trúc-hệ-thống)
-2. [Chu trình lệnh và FSM](#-chu-trình-lệnh--khối-điều-khiển-fsm)
-3. [Datapath & ALU](#-datapath--alu)
-4. [Kiến trúc Tập lệnh (ISA)](#-kiến-trúc-tập-lệnh-isa)
-5. [Bản đồ Bộ nhớ & I/O](#-bản-đồ-bộ-nhớ--io)
-6. [Sơ đồ khối RTL](#-sơ-đồ-khối-rtl)
-7. [Mô phỏng & Giản đồ xung (Waveforms)](#-mô-phỏng--giản-đồ-xung-waveforms)
-8. [Cấu trúc phân cấp Module](#-cấu-trúc-phân-cấp-module)
-9. [Hướng dẫn Chạy / Tổng hợp (Synthesize)](#-hướng-dẫn-chạy--tổng-hợp-synthesize)
+1. [Cấu trúc hệ thống](#cấu-trúc-hệ-thống)
+2. [Chu trình lệnh và FSM](#chu-trình-lệnh-và-fsm)
+3. [Đường dữ liệu (Datapath) và ALU](#đường-dữ-liệu-datapath-và-alu)
+4.[Tập lệnh (ISA)](#tập-lệnh-isa)
+5. [Phân chia Bộ nhớ và I/O](#phân-chia-bộ-nhớ-và-io)
+6. [Sơ đồ RTL](#sơ-đồ-rtl)
+7. [Mô phỏng và Biểu đồ xung](#mô-phỏng-và-biểu-đồ-xung)
+8. [Cấu trúc Module](#cấu-trúc-module)
+9. [Hướng dẫn Chạy thử nghiệm](#hướng-dẫn-chạy-thử-nghiệm)
 
 ---
 
-## Kiến trúc Hệ thống
+## Cấu trúc hệ thống
 
-Top module mcu_system kết nối CPU, RAM và các thiết bị ngoại vi LED.
+Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và các thiết bị bên ngoài.
 
-![Top Level System Architecture](docs/images/top_module.png)
-> *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Sơ đồ khối minh họa mcu_system, Lõi CPU, RAM và đầu ra LED tương tác với nhau qua bus dữ liệu và bus địa chỉ 9-bit. -->*
+![Sơ đồ kiến trúc mức Top](docs/images/top_module.png)
+*(Thêm đường dẫn ảnh sơ đồ khối mcu_system tại đây)*
 
-### Thông số Kỹ thuật Chính:
-* **Độ rộng Bus dữ liệu (Data Bus):** 9 bit
-* **Độ rộng Bus địa chỉ (Address Bus):** 9 bit
-* **Thanh ghi (Registers):** 8 thanh ghi đa dụng (`R0` - `R7`). *Lưu ý: `R7` được nối cứng để đóng vai trò làm Bộ đếm chương trình (Program Counter - PC).*
-* **Bộ nhớ (Memory):** RAM nội 128-word (Theo kiến trúc von Neumann, dùng chung cho cả Lệnh và Dữ liệu).
-
----
-
-## 🔄 Chu trình lệnh & Khối điều khiển (FSM)
-
-Khối điều khiển được quản lý bởi một Máy trạng thái hữu hạn (FSM) đa trạng thái, điều phối luồng thực thi nghiêm ngặt: **Nạp (Fetch) - Giải mã (Decode) - Thực thi (Execute) - Lưu trữ (Store)**. Vì đây là vi xử lý đa chu kỳ, mỗi lệnh cần nhiều chu kỳ xung nhịp (clock cycles) để hoàn thành, giúp các thao tác đọc/ghi bộ nhớ ổn định và tối ưu việc tái sử dụng phần cứng (như ALU).
-
-![FSM State Diagram](docs/images/fsm_state_diagram.png)
-> *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Biểu đồ chuyển trạng thái FSM hiển thị các bước T0 -> T0_Wait -> T1 -> T2 -> T3 -> T4 dựa trên từng loại lệnh. -->*
-
-### Các Trạng thái Thực thi:
-1. **Nạp lệnh - Fetch (`T0`, `T0_Wait`):** PC (`R7`) được đẩy lên Address Bus. Hệ thống chờ RAM xuất lệnh, sau đó lệnh này được chốt (latch) vào Thanh ghi lệnh (IR). PC tự động tăng thêm 1.
-2. **Giải mã - Decode (`T1`):** Mã lệnh (Opcode) 3-bit được giải mã. Các toán hạng được chuẩn bị (ví dụ: đưa giá trị thanh ghi vào các bus nội bộ của ALU). Address Bus được cấu hình cho các thao tác bộ nhớ.
-3. **Thực thi - Execute (`T2`, `T2_Wait`):** ALU thực hiện tính toán số học (`add`, `sub`), hoặc hệ thống chờ dữ liệu được tải về từ RAM (`ld`, `movi`).
-4. **Ghi lại / Lưu trữ - Write-Back / Store (`T3`):** Kết quả từ ALU được đưa ngược lại thanh ghi đích, hoặc dữ liệu được ghi vĩnh viễn vào RAM/Thiết bị ngoại vi (`st`).
-5. **Chu kỳ tiếp theo (`T4`):** Tín hiệu `Done` được bật, địa chỉ lệnh tiếp theo được xuất ra bus, và chu trình quay trở lại `T0`.
+### Thông số kỹ thuật
+* **Bus dữ liệu (Data Bus):** 9 bit.
+* **Bus địa chỉ (Address Bus):** 9 bit.
+* **Thanh ghi:** 8 thanh ghi chung (`R0` - `R7`). `R7` dùng làm thanh ghi đếm chương trình (PC).
+* **Bộ nhớ:** RAM 128 từ (word), tổ chức theo mô hình von Neumann.
 
 ---
 
-## 🛤️ Datapath & ALU
+## Chu trình lệnh và FSM
 
-Datapath hoạt động dựa trên một bộ dồn kênh (bus multiplexer) trung tâm giúp định tuyến dữ liệu giữa các thanh ghi, ALU và bộ nhớ ngoài.
+Khối điều khiển dùng Máy trạng thái hữu hạn (FSM) để thực hiện các bước: Lấy lệnh (Fetch) - Giải mã (Decode) - Thực thi (Execute) - Lưu kết quả (Store). Mỗi lệnh cần chạy qua nhiều chu kỳ xung nhịp nhằm đảm bảo đủ thời gian để RAM đọc và ghi dữ liệu.
 
-![CPU Datapath](docs/images/cpu_datapath.png)
-> *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Sơ đồ minh họa Tập thanh ghi, các thanh ghi đệm A & G, ALU và Bus multiplexer trung tâm. -->*
+![Sơ đồ trạng thái FSM](docs/images/fsm_state_diagram.png)
+*(Thêm đường dẫn ảnh sơ đồ trạng thái FSM tại đây)*
 
-* **Thiết kế ALU:** Được xây dựng từ các khối bộ cộng toàn phần (full-adder) tùy chỉnh. Hỗ trợ phép cộng và phép trừ (sử dụng bù 2).
-* **Logic Cờ Zero (Zero Flag):** Một mảng cổng NOR tổ hợp phát hiện khi đầu ra ALU bằng chính xác 0, sau đó chốt vào flip-flop `ALUz`. Tính năng này được lệnh `mvnz` sử dụng cho các thao tác rẽ nhánh có điều kiện (ví dụ: vòng lặp `while`).
+### Các trạng thái hoạt động:
+1. **Lấy lệnh (`T0`, `T0_Wait`):** Đưa địa chỉ từ PC (`R7`) ra Bus địa chỉ. Đọc dữ liệu từ RAM vào Thanh ghi lệnh (IR). Tăng PC thêm 1.
+2. **Giải mã (`T1`):** Dịch mã lệnh (Opcode) 3-bit. Mở đường cho dữ liệu từ thanh ghi đi vào bus bên trong và đặt mức logic cho Bus địa chỉ với các lệnh cần dùng bộ nhớ.
+3. **Thực thi (`T2`, `T2_Wait`):** ALU tính toán (với lệnh `add`, `sub`) hoặc hệ thống chờ lấy dữ liệu từ RAM (với lệnh `ld`, `movi`).
+4. **Lưu kết quả (`T3`):** Ghi kết quả tính toán vào thanh ghi nhận hoặc xuất dữ liệu ra RAM/cổng I/O (`st`).
+5. **Tiếp theo (`T4`):** Bật cờ `Done`, đưa địa chỉ lệnh tiếp theo ra bus và quay lại `T0`.
 
 ---
 
-## 📜 Kiến trúc Tập lệnh (ISA)
+## Đường dữ liệu (Datapath) và ALU
 
-CPU sử dụng định dạng lệnh 9-bit tùy chỉnh. 9 bit của Thanh ghi lệnh (`IR[8:0]`) được chia như sau:
-* **`IR[8:6]`**: Opcode 3-bit (Loại lệnh)
-* **`IR[5:3]`**: Index 3-bit của Thanh ghi X (`Rx` - Đích đến / Toán hạng 1)
-* **`IR[2:0]`**: Index 3-bit của Thanh ghi Y (`Ry` - Toán hạng 2)
+Thiết kế đường dữ liệu dùng một bộ chọn kênh (multiplexer) làm trung tâm để dẫn hướng dữ liệu giữa các khối.
 
-| Opcode | Lệnh (Mnemonic) | Mô tả Hoạt động | Logic RTL |
+![Sơ đồ Datapath](docs/images/cpu_datapath.png)
+*(Thêm đường dẫn ảnh sơ đồ datapath tại đây)*
+
+* **ALU:** Tạo ra từ các bộ cộng toàn phần (full-adder), làm phép cộng và phép trừ bù 2.
+* **Cờ Zero:** Dùng cổng NOR để kiểm tra xem kết quả đầu ra của ALU có bằng 0 hay không, sau đó lưu vào flip-flop `ALUz`. Cờ này dùng cho lệnh nhảy `mvnz`.
+
+---
+
+## Tập lệnh (ISA)
+
+Cấu trúc lệnh 9-bit nằm trong Thanh ghi lệnh (`IR[8:0]`):
+* **`IR[8:6]`**: Mã lệnh (Opcode) 3-bit.
+* **`IR[5:3]`**: Vị trí Thanh ghi X (`Rx` - Nơi nhận kết quả / Toán hạng 1).
+* **`IR[2:0]`**: Vị trí Thanh ghi Y (`Ry` - Toán hạng 2).
+
+| Opcode | Lệnh | Mô tả | RTL |
 | :---: | :--- | :--- | :--- |
-| `000` | **`mv Rx, Ry`** | Chuyển dữ liệu giữa các thanh ghi | `Rx ← Ry` |
-| `001` | **`movi Rx`**| Chuyển hằng số (Byte tiếp theo trong Mem) | `Rx ← Memory[PC]; PC ← PC + 1` |
-| `010` | **`add Rx, Ry`** | Phép cộng | `Rx ← Rx + Ry` |
-| `011` | **`sub Rx, Ry`** | Phép trừ | `Rx ← Rx - Ry` |
-| `100` | **`ld Rx, Ry`** | Tải từ bộ nhớ (Địa chỉ lưu ở Ry) | `Rx ← Memory[Ry]` |
-| `101` | **`st Rx, Ry`** | Lưu Rx vào bộ nhớ (Địa chỉ lưu ở Ry) | `Memory[Ry] ← Rx` |
-| `110` | **`mvnz Rx, Ry`**| Chuyển nếu khác 0 (Rẽ nhánh) | `Nếu (Z == 0) thì Rx ← Ry` |
+| `000` | **`mv Rx, Ry`** | Sao chép dữ liệu | `Rx ← Ry` |
+| `001` | **`movi Rx`**| Lấy hằng số từ bộ nhớ | `Rx ← Memory[PC]; PC ← PC + 1` |
+| `010` | **`add Rx, Ry`** | Cộng | `Rx ← Rx + Ry` |
+| `011` | **`sub Rx, Ry`** | Trừ | `Rx ← Rx - Ry` |
+| `100` | **`ld Rx, Ry`** | Đọc bộ nhớ | `Rx ← Memory[Ry]` |
+| `101` | **`st Rx, Ry`** | Ghi bộ nhớ | `Memory[Ry] ← Rx` |
+| `110` | **`mvnz Rx, Ry`**| Nhảy bước nếu khác 0 | `Nếu (Z == 0) thì Rx ← Ry` |
 
 ---
 
-## 🗺️ Bản đồ Bộ nhớ & I/O
+## Phân chia Bộ nhớ và I/O
 
-Logic giải mã địa chỉ phần cứng được tích hợp trực tiếp vào module top (`mcu_system`) để phân tách RAM vật lý khỏi các thiết bị I/O bằng kỹ thuật **Memory-Mapped I/O**.
+Top module dùng phương pháp ánh xạ I/O vào bộ nhớ (Memory-Mapped I/O). Phần cứng chia không gian bộ nhớ thành các vùng như sau:
 
-| Dải địa chỉ (Nhị phân) | Địa chỉ (Thập phân) | Thiết bị Đích | Mô tả |
+| Vùng địa chỉ (Nhị phân) | Địa chỉ (Thập phân) | Thiết bị | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `00xxxxxxx` | `0` - `127` | **RAM** | Bộ nhớ chính 128-word (Lưu Dữ liệu & Lệnh) |
-| `100000000` | `256` | **Đầu ra LED** | Thanh ghi LED 9-bit được ánh xạ bộ nhớ |
+| `00xxxxxxx` | `0` - `127` | **RAM** | Bộ nhớ chính (chứa cả Lệnh và Dữ liệu). |
+| `100000000` | `256` | **LED** | Thanh ghi ngoại vi 9-bit. |
 
-**Điều khiển Thiết bị Phần cứng:** Để xuất dữ liệu ra mảng LED thực tế, lập trình viên chỉ cần nạp số `256` vào một thanh ghi bất kỳ và sử dụng lệnh `st` (store). Module top-level sẽ can thiệp vào tín hiệu `W_Main` và định tuyến luồng dữ liệu sang module `ledreg9bit` thay vì ghi vào RAM.
-
----
-
-## 🔌 Sơ đồ khối RTL
-
-Dưới đây là các sơ đồ khối RTL (Register-Transfer Level) được tạo ra trong quá trình tổng hợp (synthesis), dùng để xác minh việc ánh xạ logic phần cứng.
-
-![Top Level RTL Viewer](docs/images/rtl_viewer_top.png)
-> *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Ảnh chụp màn hình RTL schematic của Top-level từ Quartus/Vivado. -->*
-
-![Control Unit RTL Viewer](docs/images/rtl_viewer_fsm.png)
-> *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Ảnh chụp màn hình RTL mapping của khối điều khiển FSM. -->*
+Để đưa dữ liệu ra đèn LED, dùng lệnh `st` (ghi) với địa chỉ nhận là `256`. Mạch logic sẽ tự chuyển tín hiệu ghi đến module `ledreg9bit` thay vì đẩy vào RAM.
 
 ---
 
-## 📈 Mô phỏng & Giản đồ xung (Waveforms)
+## Sơ đồ RTL
 
-Thiết kế đã được kiểm chứng bằng testbench để mô phỏng các chu kỳ xung nhịp, quá trình nạp lệnh và các phép toán ALU.
+Các sơ đồ này dùng để kiểm tra lại kết quả sau khi phần mềm dịch (synthesis) mã nguồn SystemVerilog ra logic phần cứng.
 
-![Simulation Waveforms](docs/images/simulation_waveform.png)
-> *<!-- 📸 THÊM ẢNH TẠI ĐÂY: Ảnh chụp màn hình từ ModelSim / QuestaSim / Vivado Simulator. -->*
+![Sơ đồ RTL mức Top](docs/images/rtl_viewer_top.png)
+*(Thêm đường dẫn ảnh RTL schematic mức top tại đây)*
 
-**Các điểm đáng chú ý trên Giản đồ xung:**
-* Quá trình khởi tạo tín hiệu `Clock` và `Resetn`.
-* Quan sát `Tstep_Q` chuyển đổi qua các trạng thái FSM (`T0` -> `T1` -> `T2` -> `T3` -> `T4`).
-* Tín hiệu `Done` nhảy lên mức cao tại trạng thái `T4`, cho biết lệnh đã thực thi xong và `PC` được cập nhật.
-* `BusWires` phản ánh quá trình định tuyến dữ liệu chính xác giữa các thanh ghi và bộ nhớ.
+![Sơ đồ RTL khối FSM](docs/images/rtl_viewer_fsm.png)
+*(Thêm đường dẫn ảnh RTL khối FSM tại đây)*
 
 ---
 
-## 📂 Cấu trúc phân cấp Module
+## Mô phỏng và Biểu đồ xung
 
-* `mcu_system` *(Module cao nhất)*
-  * `processor` *(Lõi CPU)*
-    * `control_unit` *(FSM, Bộ giải mã lệnh)*
-    * `alu` *(Logic toán học tổ hợp xây dựng từ các full-adder)*
-    * `pc_logic` *(Định tuyến Program Counter)*
-    * `register` *(Mảng D-Flip-Flop cho R0-R7, A, G, IR, PC)*
-    * `bus_multiplexer` *(Định tuyến dữ liệu)*
-  * `RAM` *(Khối bộ nhớ)*
-  * `ledreg9bit` *(Thanh ghi đầu ra ánh xạ bộ nhớ)*
+Hoạt động của vi xử lý được kiểm tra bằng testbench ở mức RTL.
+
+![Biểu đồ xung](docs/images/simulation_waveform.png)
+*(Thêm đường dẫn ảnh biểu đồ xung tại đây)*
+
+Các tín hiệu chính cần xem trên biểu đồ:
+* Bước chuyển trạng thái `Tstep_Q` từ `T0` đến `T4`.
+* Trạng thái tín hiệu `Done` ở cuối chu trình lệnh (`T4`).
+* Sự thay đổi giá trị của `BusWires` và thanh ghi PC.
 
 ---
 
-## 🚀 Hướng dẫn Chạy / Tổng hợp (Synthesize)
+## Cấu trúc Module
 
-1. Clone repository về máy:
+* `mcu_system` (Mức cao nhất)
+  * `processor` (Lõi CPU)
+    * `control_unit` (FSM và Giải mã lệnh)
+    * `alu` (Phép toán số học)
+    * `pc_logic` (Tính và nạp giá trị PC)
+    * `register` (Các thanh ghi R0-R7, A, G, IR, PC)
+    * `bus_multiplexer` (Bộ chọn đường dẫn Bus)
+  * `RAM` (Bộ nhớ lệnh và dữ liệu)
+  * `ledreg9bit` (Thanh ghi I/O)
+
+---
+
+## Hướng dẫn Chạy thử nghiệm
+
+1. Tải mã nguồn:
    ```bash
    git clone https://github.com/Tên-Của-Bạn/systemverilog-9bit-cpu.git
