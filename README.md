@@ -26,7 +26,7 @@ Dự án này là thiết kế phần cứng ở mức RTL cho lõi CPU 9-bit đ
 
 Module cao nhất (Top module) `mcu_system` dùng để nối lõi CPU, RAM và các thiết bị bên ngoài.
 
-![Sơ đồ kiến trúc mức Top](docs/images/top_module.png)
+![Sơ đồ kiến trúc mức Top](docs/top_module.png)
 *(Thêm đường dẫn ảnh sơ đồ khối mcu_system tại đây)*
 
 ### Thông số kỹ thuật
